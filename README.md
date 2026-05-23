@@ -32,3 +32,21 @@ Clone the repository:
 
 ```bash
 git clone https://github.com/SakshamSojitra/Shoes-Luxury.git
+
+
+## Backend (added)
+
+A minimal Express backend was added to serve product data and a simple cart endpoint.
+
+Run the backend locally:
+
+```bash
+npm run server
+```
+
+API endpoints:
+
+- `GET /api/products` — list products
+- `GET /api/products/:id` — product details
+- `POST /api/cart` — accepts `{ items: [{ id, quantity }] }` and returns `{ ok: true, total }`
+

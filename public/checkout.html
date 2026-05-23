@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Shoes Luxury | Secure Checkout</title>
+    <meta name="description" content="Secure checkout for Shoes Luxury orders." />
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f5f1ea;
+        --surface: #ffffff;
+        --surface-2: #efe7db;
+        --text: #0f0f0f;
+        --muted: #6c665d;
+        --border: rgba(15, 15, 15, 0.12);
+        --accent: #111111;
+        --accent-foreground: #f7f3ec;
+      }
+
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: Arial, Helvetica, sans-serif;
+        background: radial-gradient(circle at top, #fffaf3, var(--bg) 55%);
+        color: var(--text);
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .card {
+        width: min(960px, 100%);
+        background: var(--surface);
+        border: 1px solid var(--border);
+        box-shadow: 0 24px 80px rgba(15, 15, 15, 0.1);
+        overflow: hidden;
+      }
+      .hero {
+        padding: 40px;
+        border-bottom: 1px solid var(--border);
+        background: linear-gradient(180deg, #ffffff 0%, #fbf7f1 100%);
+      }
+      .eyebrow {
+        margin: 0 0 12px;
+        font-size: 11px;
+        letter-spacing: 0.35em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 4vw, 4rem);
+        line-height: 0.95;
+        text-transform: uppercase;
+      }
+      .body {
+        display: grid;
+        gap: 24px;
+        padding: 32px 40px 40px;
+        grid-template-columns: 1.2fr 0.8fr;
+      }
+      .panel {
+        border: 1px solid var(--border);
+        background: var(--surface-2);
+        padding: 24px;
+      }
+      .panel h2 {
+        margin: 0 0 16px;
+        font-size: 18px;
+        text-transform: uppercase;
+        letter-spacing: 0.18em;
+      }
+      .chips {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .chip {
+        border: 1px solid var(--border);
+        background: rgba(255,255,255,0.6);
+        padding: 14px;
+        font-size: 14px;
+      }
+      .list {
+        margin: 0;
+        padding-left: 18px;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 24px;
+      }
+      .btn {
+        appearance: none;
+        border: 1px solid var(--accent);
+        background: var(--accent);
+        color: var(--accent-foreground);
+        padding: 14px 20px;
+        font-size: 12px;
+        letter-spacing: 0.25em;
+        text-transform: uppercase;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .btn.secondary {
+        background: transparent;
+        color: var(--accent);
+      }
+      .footer {
+        padding: 0 40px 32px;
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.2em;
+        text-transform: uppercase;
+      }
+      @media (max-width: 840px) {
+        .body { grid-template-columns: 1fr; }
+      }
+    </style>
+    <script defer src="/payment.js"></script>
+  </head>
+  <body>
+    <main class="card">
+      <section class="hero">
+        <p class="eyebrow">Shoes Luxury Secure Checkout</p>
+        <h1>Pay Now</h1>
+      </section>
+
+      <section class="body">
+        <div class="panel">
+          <h2>Payment Methods</h2>
+          <div class="chips">
+            <div class="chip">UPI</div>
+            <div class="chip">Credit Card</div>
+            <div class="chip">Debit Card</div>
+            <div class="chip">Net Banking</div>
+            <div class="chip">Wallet</div>
+            <div class="chip">Cash on Delivery</div>
+          </div>
+          <div class="actions">
+            <a class="btn" href="/checkout">Open App Checkout</a>
+            <a class="btn secondary" href="/">Back to Store</a>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h2>Test Mode</h2>
+          <ul class="list">
+            <li>Razorpay opens from the React checkout screen.</li>
+            <li>Save customer, payment, and order details in MongoDB.</li>
+            <li>Use this page as a lightweight storefront entry point.</li>
+          </ul>
+        </div>
+      </section>
+
+      <div class="footer" id="checkout-status">Ready for secure payment</div>
+    </main>
+  </body>
+</html>

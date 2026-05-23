@@ -59,7 +59,7 @@ export default function ProductDetail() {
   const handleBuyNow = () => {
     if (!selectedSize) return;
     addToCart(product, selectedSize, quantity);
-    navigate("/cart");
+    navigate("/checkout");
   };
 
   return (
