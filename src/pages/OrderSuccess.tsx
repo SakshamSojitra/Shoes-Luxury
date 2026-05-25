@@ -27,6 +27,14 @@ type OrderDetails = {
 };
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const API_BASE_CANDIDATES = [
+  API_BASE_URL,
+  "/api",
+  "http://localhost:5000/api",
+  "http://localhost:5001/api",
+  "http://localhost:5002/api",
+  "http://localhost:5003/api",
+].filter((value, index, array) => array.indexOf(value) === index);
 
 export default function OrderSuccess() {
   const { orderId } = useParams();
@@ -43,14 +51,22 @@ export default function OrderSuccess() {
   useEffect(() => {
     const loadOrder = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/orders/${orderId}`);
-        const payload = await response.json();
+        for (const candidate of API_BASE_CANDIDATES) {
+          try {
+            const response = await fetch(`${candidate}/orders/${orderId}`);
+            if (!response.ok) {
+              continue;
+            }
 
-        if (!response.ok) {
-          throw new Error(payload.message || "Unable to load order");
+            const payload = await response.json();
+            setOrder(payload.order);
+            return;
+          } catch {
+            continue;
+          }
         }
 
-        setOrder(payload.order);
+        throw new Error("Unable to load order from backend");
       } catch (fetchError) {
         setError(fetchError instanceof Error ? fetchError.message : "Unable to load order");
       } finally {

@@ -4,9 +4,11 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const Razorpay = require('razorpay'); 
-const { initOrderStore, createOrderRecord, updateOrderPayment, findOrderById } = require('./lib/orderStore');
+const Razorpay = require('razorpay');
+const connectDB = require('./config/db');
+const Order = require('./models/Order');
 
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const productsPath = path.join(__dirname, 'products.json');
@@ -66,7 +68,30 @@ const createRazorpayClient = () => {
   });
 };
 
+const hasValidRazorpayCredentials = () => {
+  const keyId = String(process.env.RAZORPAY_KEY_ID || '').trim();
+  const keySecret = String(process.env.RAZORPAY_KEY_SECRET || '').trim();
+
+  if (!keyId || !keySecret) {
+    return false;
+  }
+
+  return keyId.startsWith('rzp_') && keySecret.length >= 10;
+};
+
 app.get('/api/health', (req, res) => res.json({ ok: true }));
+
+app.get('/api/payments/config', (req, res) => {
+  const configured = hasValidRazorpayCredentials();
+  res.json({
+    configured,
+    keyIdPresent: Boolean(process.env.RAZORPAY_KEY_ID),
+    keySecretPresent: Boolean(process.env.RAZORPAY_KEY_SECRET),
+    message: configured
+      ? 'Razorpay is configured'
+      : 'Set valid Razorpay test or live keys in server/.env and restart backend',
+  });
+});
 
 app.get('/', (req, res) => {
   res.json({
@@ -127,26 +152,44 @@ app.post('/api/orders/create-order', async (req, res, next) => {
     }
 
     const razorpay = createRazorpayClient();
-    if (!razorpay) {
+    if (!razorpay || !hasValidRazorpayCredentials()) {
       return res.status(503).json({
-        message: 'Razorpay is not configured in server/.env. Falling back to Cash on Delivery is available.',
+        message:
+          'Razorpay is not configured correctly. Set valid RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in server/.env and restart backend. Cash on Delivery is available.',
         razorpayConfigured: false,
       });
     }
 
     const orderId = generateOrderId();
-    const razorpayOrder = await razorpay.orders.create({
-      amount: Math.round(amountValue * 100),
-      currency: 'INR',
-      receipt: orderId,
-      notes: {
-        customerName,
-        phoneNumber,
-        city,
-        pincode,
-        paymentMethod: normalizedPaymentMethod,
-      },
-    });
+    let razorpayOrder;
+    try {
+      razorpayOrder = await razorpay.orders.create({
+        amount: Math.round(amountValue * 100),
+        currency: 'INR',
+        receipt: orderId,
+        notes: {
+          customerName,
+          phoneNumber,
+          city,
+          pincode,
+          paymentMethod: normalizedPaymentMethod,
+        },
+      });
+    } catch (razorpayError) {
+      const rawMessage = String(razorpayError?.error?.description || razorpayError?.message || '');
+      const normalizedMessage = rawMessage.toLowerCase();
+      const isAuthError =
+        normalizedMessage.includes('authentication failed') ||
+        normalizedMessage.includes('invalid key') ||
+        normalizedMessage.includes('unauthorized');
+
+      return res.status(502).json({
+        message: isAuthError
+          ? 'Razorpay authentication failed. Please check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in server/.env (both must be from the same Razorpay mode) and restart backend.'
+          : rawMessage ||
+            'Unable to create Razorpay order. Check RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in server/.env',
+      });
+    }
 
     return res.status(201).json({
       orderId,
@@ -237,8 +280,9 @@ app.get('/api/orders/:orderId', async (req, res, next) => {
 });
 
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: err.message || 'Server Error' });
+  const message = err?.message || err?.error?.description || 'Server Error';
+  console.error(err);
+  res.status(500).json({ message });
 });
 
 const listenOnPort = (port) =>

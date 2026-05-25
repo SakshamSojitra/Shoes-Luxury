@@ -51,6 +51,11 @@ type RazorpayResponse = {
   razorpay_signature: string;
 };
 
+type PaymentConfigResponse = {
+  configured: boolean;
+  message?: string;
+};
+
 declare global {
   interface Window {
     Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
@@ -58,6 +63,32 @@ declare global {
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "/api";
+const API_BASE_CANDIDATES = [
+  API_BASE_URL,
+  "/api",
+  "http://localhost:5000/api",
+  "http://localhost:5001/api",
+  "http://localhost:5002/api",
+  "http://localhost:5003/api",
+].filter((value, index, array) => array.indexOf(value) === index);
+
+const fetchPaymentConfig = async (): Promise<{ apiBaseUrl: string; payload: PaymentConfigResponse } | null> => {
+  for (const candidate of API_BASE_CANDIDATES) {
+    try {
+      const response = await fetch(`${candidate}/payments/config`);
+      if (!response.ok) {
+        continue;
+      }
+
+      const payload = (await response.json()) as PaymentConfigResponse;
+      return { apiBaseUrl: candidate, payload };
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+};
 const RAZORPAY_KEY_ID = import.meta.env.VITE_RAZORPAY_KEY_ID ?? "";
 
 const addressSchema = z.object({
@@ -115,10 +146,43 @@ export default function Checkout() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [processing, setProcessing] = useState(false);
+  const [paymentGatewayReady, setPaymentGatewayReady] = useState(true);
+  const [paymentGatewayMessage, setPaymentGatewayMessage] = useState("");
+  const [apiBaseUrl, setApiBaseUrl] = useState(API_BASE_URL);
 
   useEffect(() => {
     if (cart.length === 0) navigate("/cart");
   }, [cart.length, navigate]);
+
+  useEffect(() => {
+    let active = true;
+
+    const checkPaymentConfig = async () => {
+      const configResult = await fetchPaymentConfig();
+
+      if (!active) {
+        return;
+      }
+
+      if (configResult) {
+        setApiBaseUrl(configResult.apiBaseUrl);
+        setPaymentGatewayReady(Boolean(configResult.payload.configured));
+        setPaymentGatewayMessage(configResult.payload.configured ? "" : configResult.payload.message || "");
+        return;
+      }
+
+      setPaymentGatewayReady(true);
+      setPaymentGatewayMessage("");
+    };
+
+    checkPaymentConfig();
+    const intervalId = window.setInterval(checkPaymentConfig, 5000);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+    };
+  }, []);
 
   const checkoutItems = useMemo(
     () =>
@@ -176,7 +240,7 @@ export default function Checkout() {
   };
 
   const createOrder = async () => {
-    const response = await fetch(`${API_BASE_URL}/orders/create-order`, {
+    const response = await fetch(`${apiBaseUrl}/orders/create-order`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -207,8 +271,13 @@ export default function Checkout() {
       throw new Error("Razorpay checkout could not be loaded");
     }
 
+    const checkoutKey = orderPayload.keyId || RAZORPAY_KEY_ID;
+    if (!checkoutKey) {
+      throw new Error("Razorpay key is missing on server/frontend configuration");
+    }
+
     const options = {
-      key: orderPayload.keyId || RAZORPAY_KEY_ID,
+      key: checkoutKey,
       amount: Math.round(cartTotal * 100),
       currency: "INR",
       name: "Shoes Luxury",
@@ -218,35 +287,41 @@ export default function Checkout() {
       theme: { color: "#111111" },
       modal: { ondismiss: () => setProcessing(false) },
       handler: async (response: RazorpayResponse) => {
-        const verifyResponse = await fetch(`${API_BASE_URL}/orders/verify-payment`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            orderId: orderPayload.orderId,
-            razorpayOrderId: response.razorpay_order_id,
-            razorpayPaymentId: response.razorpay_payment_id,
-            razorpaySignature: response.razorpay_signature,
-            customer: {
-              name: form.name,
-              phoneNumber: form.phone,
-              address: form.address,
-              city: form.city,
-              pincode: form.pincode,
-            },
-            items: checkoutItems,
-            totalAmount: cartTotal,
-            paymentMethod,
-          }),
-        });
+        try {
+          const verifyResponse = await fetch(`${apiBaseUrl}/orders/verify-payment`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              orderId: orderPayload.orderId,
+              razorpayOrderId: response.razorpay_order_id,
+              razorpayPaymentId: response.razorpay_payment_id,
+              razorpaySignature: response.razorpay_signature,
+              customer: {
+                name: form.name,
+                phoneNumber: form.phone,
+                address: form.address,
+                city: form.city,
+                pincode: form.pincode,
+              },
+              items: checkoutItems,
+              totalAmount: cartTotal,
+              paymentMethod,
+            }),
+          });
 
-        const verifyPayload = await verifyResponse.json();
-        if (!verifyResponse.ok) {
-          throw new Error(verifyPayload.message || "Unable to verify payment");
+          const verifyPayload = await verifyResponse.json();
+          if (!verifyResponse.ok) {
+            throw new Error(verifyPayload.message || "Unable to verify payment");
+          }
+
+          clearCart();
+          toast({ title: "Payment successful", description: "Your order has been confirmed." });
+          navigate(`/order-success/${verifyPayload.order.orderId}`, { replace: true });
+        } catch (verifyError) {
+          const message = verifyError instanceof Error ? verifyError.message : "Unable to verify payment";
+          toast({ title: "Payment verification failed", description: message });
+          setProcessing(false);
         }
-
-        clearCart();
-        toast({ title: "Payment successful", description: "Your order has been confirmed." });
-        navigate(`/order-success/${verifyPayload.order.orderId}`, { replace: true });
       },
     };
 
@@ -259,6 +334,7 @@ export default function Checkout() {
 
     try {
       if (!validateCheckout()) {
+        setProcessing(false);
         return;
       }
 
@@ -345,12 +421,16 @@ export default function Checkout() {
                   <h2 className="font-heading text-lg font-bold uppercase tracking-tight">Select payment method</h2>
                   <p className="mt-1 text-sm text-muted-foreground">Choose how you want to pay.</p>
                 </div>
-                {!RAZORPAY_KEY_ID && (
-                  <span className="inline-flex items-center gap-2 border border-border px-3 py-2 text-xs uppercase tracking-[0.25em] text-muted-foreground">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Add VITE_RAZORPAY_KEY_ID
-                  </span>
-                )}
+                <span className="inline-flex items-center gap-2 border border-border px-3 py-2 text-xs uppercase tracking-[0.25em] text-muted-foreground">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Razorpay key served by backend
+                </span>
               </div>
+
+              {!paymentGatewayReady && paymentGatewayMessage && (
+                <div className="mb-4 border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+                  {paymentGatewayMessage || "Razorpay is not configured correctly in backend."}
+                </div>
+              )}
 
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {paymentOptions.map((option) => {
