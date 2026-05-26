@@ -2,13 +2,15 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import hero1 from "@/assets/hero-1.png";
+import heroAdidas from "@/assets/Adidas Hero.png";
 import hero2 from "@/assets/hero-2.jpg";
+import pumaHero from "@/assets/puma-hero.jpg";
 import hero3 from "@/assets/hero-3.jpg";
 
 const slides = [
   { image: hero1, title: "Step Into Luxury", subtitle: "Premium Sneakers Collection 2026" },
-  { image: hero2, title: "Run The Future", subtitle: "Performance Meets Style" },
-  { image: hero3, title: "Limited Editions", subtitle: "Exclusive Drops You Can't Miss" },
+  { image: heroAdidas, title: "ICONIC EVERY STEP", subtitle: "Classic Meet Modern Performance" },
+  { image: pumaHero, title: "FOREVER FAST", subtitle: "Built For Every You" },
   { image: hero1, title: "Urban Classics", subtitle: "Street Style, Elevated Comfort" },
   { image: hero2, title: "Built For Speed", subtitle: "Engineered For Everyday Motion" },
   { image: hero3, title: "Signature Picks", subtitle: "Curated Sneakers For Every Look" },
