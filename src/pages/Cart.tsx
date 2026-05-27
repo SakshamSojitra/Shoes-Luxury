@@ -39,11 +39,11 @@ export default function Cart() {
           <div className="lg:col-span-2 space-y-6">
             {cart.map((item) => (
               <div key={`${item.product.id}-${item.size}`} className="flex gap-4 md:gap-6 border-b border-border pb-6 animate-fade-in">
-                <Link to={`/product/${item.product.id}`} className="w-24 h-24 md:w-32 md:h-32 bg-white flex-shrink-0 overflow-hidden flex items-center justify-center">
+                <Link to={`/product/${item.product.id}`} className="w-20 h-20 md:w-24 md:h-24 bg-white flex-shrink-0 overflow-hidden flex items-center justify-center">
                   <img
                     src={item.product.images[0]}
                     alt={item.product.name}
-                    className={`w-full h-full object-contain ${item.product.id === "7" || item.product.id === "8" ? "p-1" : "p-2"}`}
+                    className="w-full h-full object-cover object-center"
                   />
                 </Link>
                 <div className="flex-1 min-w-0">

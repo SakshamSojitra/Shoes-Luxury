@@ -22,6 +22,12 @@ export default function ProductCard({ product, index = 0 }: Props) {
       ? "w-full h-full object-contain p-0 scale-[1.2] transition-transform duration-700 group-hover:scale-[1.24]"
       : product.id === "8"
         ? "w-full h-full object-contain p-0 scale-[1.14] transition-transform duration-700 group-hover:scale-[1.18]"
+      : product.id === "10"
+        ? "w-full h-full object-contain p-1 scale-[1.1] transition-transform duration-700 group-hover:scale-[1.14]"
+      : product.id === "16"
+        ? "w-full h-full object-contain p-0 scale-[1.18] transition-transform duration-700 group-hover:scale-[1.22]"
+      : product.id === "28"
+        ? "w-full h-full object-contain p-0 scale-[1.18] transition-transform duration-700 group-hover:scale-[1.22]"
       : product.id === "2"
         ? "w-full h-full object-contain p-1 scale-110 transition-transform duration-700 group-hover:scale-[1.15]"
         : "w-full h-full object-contain p-1 scale-110 transition-transform duration-700 group-hover:scale-[1.15]";

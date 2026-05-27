@@ -39,6 +39,14 @@ export default function ProductDetail() {
       ? "w-full h-full object-contain p-3 scale-105 animate-scale-in"
       : product.id === "8"
         ? "w-full h-full object-contain p-4 scale-105 animate-scale-in"
+      : product.id === "10"
+        ? "w-full h-full object-contain p-3 scale-105 animate-scale-in"
+      : product.id === "16"
+        ? selectedImage === 1
+          ? "w-full h-full object-contain p-0 scale-[1.2] animate-scale-in"
+          : "w-full h-full object-contain p-1 scale-[1.08] animate-scale-in"
+      : product.id === "28"
+        ? "w-full h-full object-contain p-2 scale-105 animate-scale-in"
       : "w-full h-full object-contain p-6 animate-scale-in";
   const thumbImageClass =
     product.id === "1"
@@ -48,6 +56,12 @@ export default function ProductDetail() {
       : product.id === "2"
       ? "w-full h-full object-contain p-0 scale-105"
       : product.id === "8"
+        ? "w-full h-full object-contain p-0 scale-105"
+      : product.id === "10"
+        ? "w-full h-full object-contain p-0 scale-105"
+      : product.id === "16"
+        ? "w-full h-full object-contain p-0 scale-[1.08]"
+      : product.id === "28"
         ? "w-full h-full object-contain p-0 scale-105"
       : "w-full h-full object-contain p-1";
 
